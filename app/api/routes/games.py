@@ -11,8 +11,10 @@ router = APIRouter()
 
 class Game(BaseModel):
     """Modèle de données pour un jeu vidéo"""
+    id: int = Field(..., description="Identifiant unique du jeu")
     title: str = Field(..., min_length=1, max_length=200, description="Titre du jeu")
     editor: str = Field(..., min_length=1, max_length=100, description="Editeur du jeu")
+    available: bool = Field(..., description="Disponibilité du jeu")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -44,11 +46,10 @@ class addGame(Game):
     
 class gameCreate(BaseModel):
     """création d'un jeu"""
-    id: int = Field(..., description="Identifiant unique du jeu")
     title: str = Field(..., min_length=1, max_length=200, description="Titre du jeu")
     editor: str = Field(..., min_length=1, max_length=100, description="Editeur du jeu")
-    available: bool = Field(default=True, description="Disponibilité du jeu")
-    created_at: Optional[datetime] = Field(default_factory=datetime.now, description="Date de création du jeu")
+    available: bool = Field(default=True, description="Disponibilit du jeu")
+    created_at: Optional[datetime] = Field(default_factory=datetime.now, description="Date de cration du jeu")
 
 class UpdateGame(BaseModel):
     """modification d'un jeu"""
@@ -105,6 +106,7 @@ games_db: List[dict] = [
         "updated_at": datetime.now(),
     },
 ]
+NEXT_ID = len(games_db)
     
 def looking_for_game(id: int):
     """Cherche un jeu par son ID"""
@@ -192,8 +194,7 @@ async def get_game(game_id: int):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Le jeu avec l'ID {game_id} n'existe pas",
         )
-
-    return game
+    return Game(**game)
 
 def find_game_by_id(game_id: int)->Optional[dict]:
     """
@@ -295,14 +296,12 @@ async def create_game(game: gameCreate):
     new_game = {
         "id": NEXT_ID,
         **game.model_dump(),
-        "available": True,
         "created_at": datetime.now(),
+        "updated_at": datetime.now(),
     }
-
     games_db.append(new_game)
     NEXT_ID += 1
-
-    return new_game
+    return Game(**new_game)
 
 @router.put("/{game_id}", response_model=game, status_code=status.HTTP_200_OK)
 async def update_game(game_id: int, game_update: GameUpdate):
